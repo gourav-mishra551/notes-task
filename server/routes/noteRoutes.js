@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const noteController = require('../controllers/noteController');
+const { authenticateUser } = require('../middleware/authMiddleware') ;
 
 // Validation middleware
 const validateNote = [
@@ -15,10 +16,10 @@ const validateNote = [
 ];
 
 // Routes
-router.get('/', noteController.getAllNotes);
-router.get('/:id', noteController.getNoteById);
-router.post('/create', validateNote, noteController.createNote);
-router.put('/:id', validateNote, noteController.updateNote);
-router.delete('/:id', noteController.deleteNote);
+router.get('/',authenticateUser, noteController.getAllNotes);
+router.get('/:id',authenticateUser, noteController.getNoteById);
+router.post('/',  authenticateUser, validateNote, noteController.createNote);
+router.put('/:id',authenticateUser, validateNote, noteController.updateNote);
+router.delete('/:id',authenticateUser, noteController.deleteNote);
 
 module.exports = router;

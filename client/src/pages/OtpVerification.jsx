@@ -93,7 +93,7 @@ const OtpVerification = () => {
       const result = await verifyOtp(email, otpValue);
       
       if (result.success) {
-        navigate('/dashboard');
+        navigate('/login');
       } else {
         setError(result.message);
       }

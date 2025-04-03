@@ -9,10 +9,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <p>Loading...</p>; // Prevents rendering before auth check is complete
+  }
   if (!user) {
     return <Navigate to="/login" />;
   }
+
   return children;
 };
 

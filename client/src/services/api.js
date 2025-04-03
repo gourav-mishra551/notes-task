@@ -1,20 +1,42 @@
 import axios from "axios";
 const API_URL = "http://localhost:3001/api";
 
+
+
 export const fetchNotes = async () => {
-  const response = await fetch(`${API_URL}/notes`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch notes");
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const response = await fetch(`${API_URL}/notes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorMessage = `Error ${response.status}: ${await response.text()}`;
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch Notes Error:", error.message);
+    throw error;
   }
-  return response.json();
 };
 
+
 export const createNote = async (note) => {
+  const id = localStorage.getItem("id")
   const response = await fetch(`${API_URL}/notes`, {
     method: "POST",
     headers: {
       'Authorization': `Bearer ${localStorage.getItem("token")}`,
-      'id': localStorage.getItem("Id"),
+      'id': id,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(note),
@@ -27,10 +49,12 @@ export const createNote = async (note) => {
 };
 
 export const updateNote = async (id, note) => {
+  if (!id) throw new Error("Note ID is required");
+
   const response = await fetch(`${API_URL}/notes/${id}`, {
     method: "PUT",
     headers: {
-     'Authorization': `Bearer ${localStorage.getItem("token")}`,
+      'Authorization': `Bearer ${localStorage.getItem("token")}`,
       'id': localStorage.getItem("Id"),
       "Content-Type": "application/json",
     },
@@ -38,10 +62,12 @@ export const updateNote = async (id, note) => {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update note");
+    const errorMessage = `Failed to update note: ${response.status} ${await response.text()}`;
+    throw new Error(errorMessage);
   }
   return response.json();
 };
+
 
 export const deleteNote = async (id) => {
   const response = await fetch(`${API_URL}/notes/${id}`, {
@@ -70,15 +96,15 @@ export const api = axios.create({
    },
 });
 
-// Add response interceptor for handling common errors
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token on unauthorized response
+  
       localStorage.removeItem("token");
       delete api.defaults.headers.common["Authorization"];
-      // Redirect to login if needed
+    
       window.location.href = "/login";
     }
     return Promise.reject(error);

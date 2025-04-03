@@ -8,7 +8,6 @@ const AuthContext = createContext({
   login: () => Promise.resolve({ success: false }),
   register: () => Promise.resolve({ success: false }),
   verifyOtp: () => Promise.resolve({ success: false }),
-  logout: () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -24,11 +23,11 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await api.get('/user/me');
-          setUser(response.data);
+          const response = await api.get('/auth/user');
+          setUser(response?.data?.user);
         } catch (error) {
+          console.log(error)
           localStorage.removeItem('token');
-          delete api.defaults.headers.common['Authorization'];
         }
       }
       setLoading(false);
@@ -47,6 +46,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       localStorage.setItem('token', token);
+      localStorage.setItem('id',user?.id)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       
@@ -94,11 +94,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
-    setUser(null);
-  };
+
   
   const value = {
     user,
@@ -106,7 +102,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     verifyOtp,
-    logout
   };
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

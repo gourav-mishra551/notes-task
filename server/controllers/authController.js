@@ -31,22 +31,32 @@ exports.registerUser = async (req, res) => {
 };
 
 //verify otp
-exports.verifyOTP = async(req,res)=>{
-    const {email,otp} = req.body;
+exports.verifyOTP = async (req, res) => {
     try {
-        if(!user || user.otp !== otp || user.otpExpiry < Date.now()){
-            return res.status(400).json({message:"Invalid or expired otp"})
-        }
-        user.isVerified = true;
-        user.otp  = null;
-        user.otpExpiry = null;
-        await user.save();
+        const { email, otp } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase() }).lean();
 
-        res.status(200).json({message:"Emai verified. YOu can now login"})
+        if (!user) {
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        console.log("Stored OTP:", user.otp, "Length:", user.otp.length);
+        console.log("Entered OTP:", otp, "Length:", otp.length);
+        console.log([...user.otp].map(c => c.charCodeAt(0))); // Debug character codes
+        console.log([...otp].map(c => c.charCodeAt(0)));
+
+        if (String(user.otp).trim() !== String(otp).trim() ) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+
+        await User.updateOne({ email }, { $set: { isVerified: true, otp: null, otpExpiry: null } });
+
+        res.status(200).json({ message: "Email verified. You can now log in" });
     } catch (error) {
-        res.status(500).json({message:error.message});
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
 //Login user
 exports.loginUser = async(req,res)=>{
     const {email,password} = req.body;
@@ -120,3 +130,17 @@ exports.getUserProfile = async (req,res)=>{
         res.status(500).json({ message: error.message });
     }
 }
+
+exports.userCheck = async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id).select("-password"); // Exclude password field
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found." });
+      }
+  
+      res.status(200).json({ success: true, user });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ success: false, message: "Server error." });
+    }
+  }
